@@ -7,47 +7,22 @@ var Colors = {
     pink:0xF5986E,
     yellow:0xf4ce93,
     blue:0x68c3c0,
-    green:0x71f442,
+    saddleBrown:0x8B4513,
+    ForestGreen:0x228B22,
+    Maroon:0x800000,
+    DarkCyan:0x008B8B,
+    Navy:0x000080,
+    Indigo:0x4B0082,
+    DarkSlateGray:0x2F4F4F,
+    DarkMagenta:0x8B008B,
+    Black:0x000000,
+    Sea:0x1322ff,
+    Coin:0x256fff,
+    purple:0xb274db,
+
 };
 
-// KONAMI CODE
-// a key map of allowed keys
-var godMode = false;
-var allowedKeys = {
-  37: 'left',
-  38: 'up',
-  39: 'right',
-  40: 'down',
-  65: 'a',
-  66: 'b'
-};
-
-// the 'official' Konami Code sequence
-// var konamiCode = ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right', 'b', 'a'];
-var konamiCode = ['b', 'a'];
-
-// a variable to remember the 'position' the user has reached so far.
-var konamiCodePosition = 0;
-
-// add keydown event listener
-document.addEventListener('keydown', function(e) {
-  // get the value of the key code from the key map
-  var key = allowedKeys[e.keyCode];
-  // get the value of the required key from the konami code
-  var requiredKey = konamiCode[konamiCodePosition];
-
-  // compare the key with the required key
-  if (key == requiredKey) {
-
-    // move to the next key in the konami code sequence
-    konamiCodePosition++;
-
-    // if the last key is reached, activate cheats
-    if (konamiCodePosition == konamiCode.length)
-      godMode = true;
-  } else
-    konamiCodePosition = 0;
-});
+///////////////
 
 // GAME VARIABLES
 var game;
@@ -55,7 +30,6 @@ var deltaTime = 0;
 var newTime = new Date().getTime();
 var oldTime = new Date().getTime();
 var ennemiesPool = [];
-var pupsPool = [];
 var particlesPool = [];
 var particlesInUse = [];
 
@@ -73,6 +47,7 @@ function resetGame(){
           ratioSpeedDistance:50,
           energy:100,
           ratioSpeedEnergy:3,
+          health:250,
 
           level:1,
           levelLastUpdate:0,
@@ -118,10 +93,7 @@ function resetGame(){
           ennemyLastSpawn:0,
           distanceForEnnemiesSpawn:50,
 
-          powerUpDistanceTolerance:10,
-          powerUpsSpeed:.6,
-          powerUpLastSpawn:0,
-          distanceForPowerUpsSpawn:50,
+          bulletSpeed:.00035,
 
           status : "playing",
          };
@@ -223,10 +195,42 @@ function handleTouchEnd(event){
   }
 }
 
+// LIGHTS
+
+var ambientLight, hemisphereLight, shadowLight;
+
+function createLights() {
+
+  hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9)
+
+  ambientLight = new THREE.AmbientLight(0xdc8874, .5);
+
+  shadowLight = new THREE.DirectionalLight(0xffffff, .9);
+  shadowLight.position.set(150, 350, 350);
+  shadowLight.castShadow = true;
+  shadowLight.shadow.camera.left = -400;
+  shadowLight.shadow.camera.right = 400;
+  shadowLight.shadow.camera.top = 400;
+  shadowLight.shadow.camera.bottom = -400;
+  shadowLight.shadow.camera.near = 1;
+  shadowLight.shadow.camera.far = 1000;
+  shadowLight.shadow.mapSize.width = 4096;
+  shadowLight.shadow.mapSize.height = 4096;
+
+  var ch = new THREE.CameraHelper(shadowLight.shadow.camera);
+
+  //scene.add(ch);
+  scene.add(hemisphereLight);
+  scene.add(shadowLight);
+  scene.add(ambientLight);
+
+}
+
+
 Ennemy = function(){
   var geom = new THREE.TetrahedronGeometry(8,2);
   var mat = new THREE.MeshPhongMaterial({
-    color:Colors.red,
+    color:Colors.saddleBrown,
     shininess:0,
     specular:0xffffff,
     shading:THREE.FlatShading
@@ -272,35 +276,53 @@ EnnemiesHolder.prototype.rotateEnnemies = function(){
 
     ennemy.mesh.position.y = -game.seaRadius + Math.sin(ennemy.angle)*ennemy.distance;
     ennemy.mesh.position.x = Math.cos(ennemy.angle)*ennemy.distance;
-    ennemy.mesh.rotation.z += Math.random()*.1;
-    ennemy.mesh.rotation.y += Math.random()*.1;
+    // ennemy.mesh.rotation.z += Math.random()*.1;
+    // ennemy.mesh.rotation.y += Math.random()*.1;
 
     //var globalEnnemyPosition =  ennemy.mesh.localToWorld(new THREE.Vector3());
+    // Plane collision with ennemies
     var diffPos = airplane.mesh.position.clone().sub(ennemy.mesh.position.clone());
     var d = diffPos.length();
     if (d<game.ennemyDistanceTolerance){
-      particlesHolder.spawnParticles(ennemy.mesh.position.clone(), 15, Colors.red, 3);
+      particlesHolder.spawnParticles(ennemy.mesh.position.clone(), 15, Colors.saddleBrown, 3);
 
       ennemiesPool.unshift(this.ennemiesInUse.splice(i,1)[0]);
+
       this.mesh.remove(ennemy.mesh);
       game.planeCollisionSpeedX = 100 * diffPos.x / d;
       game.planeCollisionSpeedY = 100 * diffPos.y / d;
       ambientLight.intensity = 2;
 
       removeEnergy();
+      removehealth();
       i--;
     }else if (ennemy.angle > Math.PI){
       ennemiesPool.unshift(this.ennemiesInUse.splice(i,1)[0]);
       this.mesh.remove(ennemy.mesh);
       i--;
     }
+    for(let i=0; i < bulletsHolder.bulletsInUse.length; i++) {
+      var diffPos = bulletsHolder.bulletsInUse[i].mesh.position.clone().sub(ennemy.mesh.position.clone());
+      var d = diffPos.length();
+      if (d<game.ennemyDistanceTolerance){
+        particlesHolder.spawnParticles(ennemy.mesh.position.clone(), 15, Colors.saddleBrown, 3);
+
+        ennemiesPool.unshift(this.ennemiesInUse.splice(i,1)[0]);
+        bulletsHolder.bulletsInUse.splice(i, 1);
+
+        this.mesh.remove(ennemy.mesh);
+        this.mesh.remove(bulletsHolder.bulletsInUse[i].mesh);
+        ambientLight.intensity = 2;
+
+      }
+    }
   }
 }
 
-Powerup = function(){
+Bullet = function(){
   var geom = new THREE.TetrahedronGeometry(8,2);
   var mat = new THREE.MeshPhongMaterial({
-    color:Colors.green,
+    color:Colors.red,
     shininess:0,
     specular:0xffffff,
     shading:THREE.FlatShading
@@ -311,64 +333,37 @@ Powerup = function(){
   this.dist = 0;
 }
 
-PowerupHolder = function (){
+BulletsHolder = function (){
   this.mesh = new THREE.Object3D();
-  this.PowerupsInUse = [];
+  this.bulletsInUse = [];
+  console.log("BulletsHolder");
+  console.log(this);
 }
 
-PowerupHolder.prototype.spawnPowerups = function(){
-  var nPowerups = game.level/5;
+BulletsHolder.prototype.addBullet = function() {
+  var bullet = new Bullet();
+  bullet.angle = 0;
+  bullet.distance = game.seaRadius + game.planeDefaultHeight + (-1 + Math.random() * 2) * (game.planeAmpHeight-20);
+  bullet.mesh.position.y = -game.seaRadius + Math.sin(bullet.angle)*bullet.distance;
+  bullet.mesh.position.x = Math.cos(bullet.angle)*bullet.distance;
 
-  for (var i=0; i<nPowerups; i++){
-    var pup;
-    if (pupsPool.length) {
-      pup = pupsPool.pop();
-    }else{
-      pup = new Powerup();
-    }
-
-    pup.angle = - (i*0.1);
-    pup.distance = game.seaRadius + game.planeDefaultHeight + (-1 + Math.random() * 2) * (game.planeAmpHeight-20);
-    pup.mesh.position.y = -game.seaRadius + Math.sin(pup.angle)*pup.distance;
-    pup.mesh.position.x = Math.cos(pup.angle)*pup.distance;
-
-    this.mesh.add(pup.mesh);
-    this.PowerupsInUse.push(pup);
-  }
+  this.mesh.add(bullet.mesh);
+  this.bulletsInUse.push(bullet);
+  console.log("BulletsHolder addBullet done");
 }
 
-PowerupHolder.prototype.rotatePowerups = function(){
-  for (var i=0; i<this.PowerupsInUse.length; i++){
-    var pup = this.PowerupsInUse[i];
-    pup.angle += game.speed*deltaTime*game.powerUpsSpeed;
+BulletsHolder.prototype.rotateBullets = function(){
+  for (var i=0; i<this.bulletsInUse.length; i++){
+    var bullet = this.bulletsInUse[i];
+    bullet.angle -= game.speed*deltaTime*game.bulletSpeed;
 
-    if (pup.angle > Math.PI*2) pup.angle -= Math.PI*2;
+    if (bullet.angle > Math.PI*2) bullet.angle -= Math.PI*2;
 
-    pup.mesh.position.y = -game.seaRadius + Math.sin(pup.angle)*pup.distance;
-    pup.mesh.position.x = Math.cos(pup.angle)*pup.distance;
-    pup.mesh.rotation.z += Math.random()*.1;
-    pup.mesh.rotation.y += Math.random()*.1;
-
-    //var globalEnnemyPosition =  ennemy.mesh.localToWorld(new THREE.Vector3());
-    var diffPos = airplane.mesh.position.clone().sub(pup.mesh.position.clone());
-    var d = diffPos.length();
-    if (d<game.powerUpDistanceTolerance){
-      particlesHolder.spawnParticles(pup.mesh.position.clone(), 15, Colors.green, 3);
-
-      pupsPool.unshift(this.PowerupsInUse.splice(i,1)[0]);
-      this.mesh.remove(pup.mesh);
-      game.planeCollisionSpeedX = 100 * diffPos.x / d;
-      game.planeCollisionSpeedY = 100 * diffPos.y / d;
-      ambientLight.intensity = 2;
-
-      game.energy = 100;
-      i--;
-    }else if (pup.angle > Math.PI){
-      pupsPool.unshift(this.PowerupsInUse.splice(i,1)[0]);
-      this.mesh.remove(pup.mesh);
-      i--;
-    }
+    bullet.mesh.position.y = airplane.mesh.position.y - 20;
+    bullet.mesh.position.x = Math.cos(bullet.angle)*bullet.distance;
   }
+  // console.log(this.bulletsInUse.length);
+  // console.log("rotateBullets done");
 }
 
 Particle = function(){
@@ -425,16 +420,16 @@ ParticlesHolder.prototype.spawnParticles = function(pos, density, color, scale){
 }
 
 Coin = function(){
-  var geom = new THREE.TetrahedronGeometry(5,0);
+  var geom = new THREE.TetrahedronGeometry(5,2);
   var mat = new THREE.MeshPhongMaterial({
-    color:0x009999,
+    color:0x256fff,
     shininess:0,
     specular:0xffffff,
 
     shading:THREE.FlatShading
   });
   this.mesh = new THREE.Mesh(geom,mat);
-  this.mesh.castShadow = true;
+
   this.angle = 0;
   this.dist = 0;
 }
@@ -487,7 +482,7 @@ CoinsHolder.prototype.rotateCoins = function(){
     if (d<game.coinDistanceTolerance){
       this.coinsPool.unshift(this.coinsInUse.splice(i,1)[0]);
       this.mesh.remove(coin.mesh);
-      particlesHolder.spawnParticles(coin.mesh.position.clone(), 5, 0x009999, .8);
+      particlesHolder.spawnParticles(coin.mesh.position.clone(), 10, 0x256fff, .8);
       addEnergy();
       i--;
     }else if (coin.angle > Math.PI){
@@ -499,28 +494,60 @@ CoinsHolder.prototype.rotateCoins = function(){
 }
 
 
-// 3D Models
-var sea;
-var airplane;
 
-function createPlane(){
-  airplane = new AirPlane();
-  airplane.mesh.scale.set(.25,.25,.25);
-  airplane.mesh.position.y = game.planeDefaultHeight;
-  scene.add(airplane.mesh);
+var missile
+
+missile =  function () {
+
+  var geom = new THREE.CylinderGeometry(5,2,10,4);
+  var mat = new THREE.MeshPhongMaterial({
+    color:0x982106,
+    shininess:0,
+    specular:0xffffff,
+    shading:THREE.FlatShading
+  });
+  this.mesh = new THREE.Mesh(geom,mat);
+    }
+
+
+function createMissile(){
+ missile = new Missile();
+  missile.mesh.scale.set(1,1,1);
+ missile.mesh.position.y = airplane.mesh.position.y - 20;
+  scene.add(missile.mesh);
+
+
 }
 
-function createSea(){
-  sea = new Sea();
-  sea.mesh.position.y = -game.seaRadius;
-  scene.add(sea.mesh);
+function messagedisp(){
+
+
+   alert("no more click");
+
 }
 
-function createSky(){
-  sky = new Sky();
-  sky.mesh.position.y = -game.seaRadius;
-  scene.add(sky.mesh);
+
+function moveMissile() {
+
+
+
 }
+
+// <embed loop="true" src="continuoussound.mp3" hidden="true" type="video/quicktime" ></embed>
+/*var bgsound;
+var blast;
+function createblastsound(){
+ bgsound = document.getElementById("bgsound");
+ blast = document.createElement("embed");
+blast.setAttribute("src","blast sound");
+blast.setAttribute("type","video/quicktime");
+blast.setAttribute("hidden","true");
+bgsound.appendChild(blast);
+
+alert("bgsound.innerHTML")
+}
+
+*/
 
 function createCoins(){
 
@@ -534,16 +561,14 @@ function createEnnemies(){
     ennemiesPool.push(ennemy);
   }
   ennemiesHolder = new EnnemiesHolder();
+  //ennemiesHolder.mesh.position.y = -game.seaRadius;
   scene.add(ennemiesHolder.mesh)
 }
 
-function createPowerUps(){
-  for (var i=0; i<10; i++){
-    var pup = new Powerup();
-    pupsPool.push(pup);
-  }
-  powerupsHolder = new PowerupHolder();
-  scene.add(powerupsHolder.mesh)
+function createBullets(){
+  bulletsHolder = new BulletsHolder();
+  scene.add(bulletsHolder.mesh)
+  console.log("createBullets");
 }
 
 function createParticles(){
@@ -555,13 +580,46 @@ function createParticles(){
   scene.add(particlesHolder.mesh)
 }
 
+var bg;
+var glevel;
+bg = document.getElementById("gameHolder");
+
 function loop(){
 
   newTime = new Date().getTime();
   deltaTime = newTime-oldTime;
   oldTime = newTime;
 
+
+
+
+
+ glevel = game.level;
+
+
+
+
+
   if (game.status=="playing"){
+
+
+/*
+
+
+    switch(glevel) {
+        case 0:
+            bg.style.background =  linear-gradient(0x94e0ba, 0xf7d9aa) || -webkit-linear-gradient(0x94e0ba, 0xf7d9aa);
+            break;
+        case 2:
+            bg.style.background =  linear-gradient(0x94e0ff, 0xf7d9bb) || -webkit-linear-gradient(0x94e0ff, 0xf7d9bb);
+            break;
+        default:
+            bg.style.background =  linear-gradient(0x94e0ba, 0xf7d9aa) || -webkit-linear-gradient(0x94e0ba, 0xf7d9aa);
+            break;
+       }
+
+*/
+
 
     // Add energy coins every 100m;
     if (Math.floor(game.distance)%game.distanceForCoinsSpawn == 0 && Math.floor(game.distance) > game.coinLastSpawn){
@@ -578,11 +636,6 @@ function loop(){
     if (Math.floor(game.distance)%game.distanceForEnnemiesSpawn == 0 && Math.floor(game.distance) > game.ennemyLastSpawn){
       game.ennemyLastSpawn = Math.floor(game.distance);
       ennemiesHolder.spawnEnnemies();
-    }
-
-    if (Math.floor(game.distance)%game.distanceForPowerUpsSpawn == 0 && Math.floor(game.distance) > game.powerUpLastSpawn){
-      game.ennemyLastSpawn = Math.floor(game.distance);
-      powerupsHolder.spawnPowerups();
     }
 
     if (Math.floor(game.distance)%game.distanceForLevelUpdate == 0 && Math.floor(game.distance) > game.levelLastUpdate){
@@ -626,7 +679,7 @@ function loop(){
 
   coinsHolder.rotateCoins();
   ennemiesHolder.rotateEnnemies();
-  powerupsHolder.rotatePowerups();
+  bulletsHolder.rotateBullets();
 
   sky.moveClouds();
   sea.moveWaves();
@@ -645,15 +698,13 @@ function updateDistance(){
 
 var blinkEnergy=false;
 
+
+
 function updateEnergy(){
   game.energy -= game.speed*deltaTime*game.ratioSpeedEnergy;
   game.energy = Math.max(0, game.energy);
   energyBar.style.right = (100-game.energy)+"%";
   energyBar.style.backgroundColor = (game.energy<50)? "#f25346" : "#68c3c0";
-
-  if (!!godMode) {
-      activateCheats();
-  }
 
   if (game.energy<30){
     energyBar.style.animationName = "blinking";
@@ -676,37 +727,30 @@ function removeEnergy(){
   game.energy = Math.max(0, game.energy);
 }
 
+function updateHealth(){
 
+  healthBar.style.right = (100-game.health)+"%";
+  healthBar.style.backgroundColor = (game.health<50)? "#f25346" : "#68c3c0";
 
-function updatePlane(){
+  if (game.health<30){
+    healthBar.style.animationName = "blinking";
+  }else{
+    healthBar.style.animationName = "none";
+  }
 
-  game.planeSpeed = normalize(mousePos.x,-.5,.5,game.planeMinSpeed, game.planeMaxSpeed);
-  var targetY = normalize(mousePos.y,-.75,.75,game.planeDefaultHeight-game.planeAmpHeight, game.planeDefaultHeight+game.planeAmpHeight);
-  var targetX = normalize(mousePos.x,-1,1,-game.planeAmpWidth*.7, -game.planeAmpWidth);
+  if (game.health <1){
+    game.status = "gameover";
+  }
+}
 
-  game.planeCollisionDisplacementX += game.planeCollisionSpeedX;
-  targetX += game.planeCollisionDisplacementX;
+function addhealth(){
+  game.health += game.coinValue;
+  game.health = Math.min(game.health, 100);
+}
 
-
-  game.planeCollisionDisplacementY += game.planeCollisionSpeedY;
-  targetY += game.planeCollisionDisplacementY;
-
-  airplane.mesh.position.y += (targetY-airplane.mesh.position.y)*deltaTime*game.planeMoveSensivity;
-  airplane.mesh.position.x += (targetX-airplane.mesh.position.x)*deltaTime*game.planeMoveSensivity;
-
-  airplane.mesh.rotation.z = (targetY-airplane.mesh.position.y)*deltaTime*game.planeRotXSensivity;
-  airplane.mesh.rotation.x = (airplane.mesh.position.y-targetY)*deltaTime*game.planeRotZSensivity;
-  var targetCameraZ = normalize(game.planeSpeed, game.planeMinSpeed, game.planeMaxSpeed, game.cameraNearPos, game.cameraFarPos);
-  camera.fov = normalize(mousePos.x,-1,1,40, 80);
-  camera.updateProjectionMatrix ()
-  camera.position.y += (airplane.mesh.position.y - camera.position.y)*deltaTime*game.cameraSensivity;
-
-  game.planeCollisionSpeedX += (0-game.planeCollisionSpeedX)*deltaTime * 0.03;
-  game.planeCollisionDisplacementX += (0-game.planeCollisionDisplacementX)*deltaTime *0.01;
-  game.planeCollisionSpeedY += (0-game.planeCollisionSpeedY)*deltaTime * 0.03;
-  game.planeCollisionDisplacementY += (0-game.planeCollisionDisplacementY)*deltaTime *0.01;
-
-  airplane.pilot.updateHairs();
+function removehealth(){
+  game.health -= game.ennemyValue*3;
+  game.health = Math.max(0, game.health);
 }
 
 function showReplay(){
@@ -717,6 +761,12 @@ function hideReplay(){
   replayMessage.style.display="none";
 }
 
+function addBullet() {
+  console.log("addBullet started");
+  bulletsHolder.addBullet();
+  console.log("addBullet done");
+}
+
 function normalize(v,vmin,vmax,tmin, tmax){
   var nv = Math.max(Math.min(v,vmax), vmin);
   var dv = vmax-vmin;
@@ -724,10 +774,6 @@ function normalize(v,vmin,vmax,tmin, tmax){
   var dt = tmax-tmin;
   var tv = tmin + (pc*dt);
   return tv;
-}
-
-function activateCheats(){
-  game.energy = 100;
 }
 
 var fieldDistance, energyBar, replayMessage, fieldLevel, levelCircle;
@@ -751,15 +797,18 @@ function init(event){
   createSky();
   createCoins();
   createEnnemies();
-  createPowerUps();
   createParticles();
+  createBullets();
 
   document.addEventListener('mousemove', handleMouseMove, false);
   document.addEventListener('touchmove', handleTouchMove, false);
   document.addEventListener('mouseup', handleMouseUp, false);
   document.addEventListener('touchend', handleTouchEnd, false);
-
+// document.addEventListener('mousedown', createMissile, false);
+  document.addEventListener('click', addBullet, false);
   loop();
 }
+
+
 
 window.addEventListener('load', init, false);

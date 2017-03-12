@@ -1,9 +1,9 @@
-.game-holder {
+#gameHolder {
 	position: absolute;
 	width: 100%;
 	height: 100%;
-	background: -webkit-linear-gradient(#e4e0ba, #f7d9aa);
-	background: linear-gradient(#e4e0ba, #f7d9aa);
+	background: -webkit-linear-gradient(#12d4ba, #f7d9aa);
+	background: linear-gradient(#12d4ba, #f7d9aa);
 }
 
 .world {
@@ -24,18 +24,18 @@
 
 .header h1 {
 	font-family: 'Playfair Display';
-	font-size: 4.5em;
+	font-size: 4em;
 	line-height: 1;
 	margin: 0;
 	letter-spacing: -0.025em;
-	color: #d1b790;
+	color: #8941ba;
 }
 
 .header h1 span {
-	font-size: 0.2em;
+	font-size: 0.4em;
 	font-style: italic;
 	display: block;
-	margin: 0 0 -1.5em -7em;
+	margin: 0 0 -0.3em -4em;
 	letter-spacing: 0px;
 }
 
@@ -64,8 +64,8 @@
 }
 
 .score__content:nth-child(2) {
-	border-right: 1px solid #d1b790;
-	border-left: 1px solid #d1b790;
+	border-right: 1px solid #cea76d;
+	border-left: 1px solid #cea76d;
 }
 
 .score__label {
@@ -75,13 +75,13 @@
 	text-align: center;
 	letter-spacing: 3px;
 	text-transform: uppercase;
-	color: #d1b790;
+	color: #242987;
 }
 
 .score__value {
 	font-family: 'Playfair Display';
 	font-weight: bold;
-	color: #d1b790;
+	color: #3e4291;
 }
 
 .score__value--level {
@@ -107,7 +107,7 @@
 	height: 8px;
 	margin-top: 20px;
 	border-radius: 3px;
-	background-color: #d1b790;
+	background-color: #71b790;
 }
 
 .energy-bar {
@@ -117,7 +117,57 @@
 	bottom: 0;
 	left: 0;
 	margin: 2px;
-	background-color: #f25346;
+	background-color: #000;
+	-webkit-animation-name: none;
+	animation-name: none;
+	-webkit-animation-duration: 150ms;
+	animation-duration: 150ms;
+	-webkit-animation-iteration-count: infinite;
+	animation-iteration-count: infinite;
+}
+
+.score__value--health {
+	position: relative;
+	width: 60px;
+	height: 8px;
+	margin-top: 20px;
+	border-radius: 3px;
+	background-color: #71b790;
+}
+
+.health-bar {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	margin: 2px;
+	background-color: #125346;
+	-webkit-animation-name: none;
+	animation-name: none;
+	-webkit-animation-duration: 150ms;
+	animation-duration: 150ms;
+	-webkit-animation-iteration-count: infinite;
+	animation-iteration-count: infinite;
+}
+
+.score__value--missile {
+	position: relative;
+	width: 60px;
+	height: 8px;
+	margin-top: 20px;
+	border-radius: 3px;
+	background-color: #71b790;
+}
+
+.missile-bar {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	margin: 2px;
+	background-color: #125346;
 	-webkit-animation-name: none;
 	animation-name: none;
 	-webkit-animation-duration: 150ms;
@@ -142,7 +192,7 @@
 	display: none;
 	text-indent: 0.5em;
 	letter-spacing: 0.5em;
-	color: #d1b790;
+	color: #72451d;
 }
 
 .message--instructions {
@@ -150,7 +200,7 @@
 	font-size: 0.85em;
 	bottom: 8vh;
 	letter-spacing: 0.2em;
-	color: #68c3c0;
+	color: #4b0082;
 }
 
 .message--instructions span {
