@@ -45,9 +45,9 @@ function resetGame(){
 
           distance:0,
           ratioSpeedDistance:50,
-          energy:100,
+          energy:250,
           ratioSpeedEnergy:3,
-          health:250,
+          health:100,
 
           level:1,
           levelLastUpdate:0,
@@ -93,7 +93,7 @@ function resetGame(){
           ennemyLastSpawn:0,
           distanceForEnnemiesSpawn:50,
 
-          bulletSpeed:.00035,
+          bulletSpeed:5,
 
           status : "playing",
          };
@@ -226,6 +226,7 @@ function createLights() {
 
 }
 
+var kills = 0 ;
 
 Ennemy = function(){
   var geom = new THREE.TetrahedronGeometry(8,2);
@@ -294,25 +295,45 @@ EnnemiesHolder.prototype.rotateEnnemies = function(){
       ambientLight.intensity = 2;
 
       removeEnergy();
-      removehealth();
+      removehealth(10);
       i--;
     }else if (ennemy.angle > Math.PI){
       ennemiesPool.unshift(this.ennemiesInUse.splice(i,1)[0]);
       this.mesh.remove(ennemy.mesh);
       i--;
     }
-    for(let i=0; i < bulletsHolder.bulletsInUse.length; i++) {
-      var diffPos = bulletsHolder.bulletsInUse[i].mesh.position.clone().sub(ennemy.mesh.position.clone());
-      var d = diffPos.length();
-      if (d<game.ennemyDistanceTolerance){
-        particlesHolder.spawnParticles(ennemy.mesh.position.clone(), 15, Colors.saddleBrown, 3);
+      
+    for(let j=0; j < bulletsHolder.bulletsInUse.length; j++) {
 
+      
+      var diffPos1 = bulletsHolder.bulletsInUse[j].mesh.position.clone().sub(ennemy.mesh.position.clone());
+      var d = diffPos1.length();
+      if (d<game.ennemyDistanceTolerance){
+
+
+          var bullet = bulletsHolder.bulletsInUse[j];
+        //console.log(j, 'collided bullet');
+        particlesHolder.spawnParticles(ennemy.mesh.position.clone(), 15, Colors.saddleBrown, 3);
+         particlesHolder.spawnParticles(bullet.mesh.position.clone(), 15, Colors.saddleBrown, 3);
+       
         ennemiesPool.unshift(this.ennemiesInUse.splice(i,1)[0]);
-        bulletsHolder.bulletsInUse.splice(i, 1);
+       
+
 
         this.mesh.remove(ennemy.mesh);
-        this.mesh.remove(bulletsHolder.bulletsInUse[i].mesh);
+        //console.log(i, 'collided enemy');
+        
+
+        bulletsHolder.mesh.remove(bulletsHolder.bulletsInUse[j].mesh);
+
+        bulletsHolder.bulletsInUse.splice(j, 1);
+
+        
         ambientLight.intensity = 2;
+        kills++;
+        i--;
+      break;
+
 
       }
     }
@@ -320,7 +341,7 @@ EnnemiesHolder.prototype.rotateEnnemies = function(){
 }
 
 Bullet = function(){
-  var geom = new THREE.TetrahedronGeometry(8,2);
+  var geom = new THREE.TetrahedronGeometry(2,0);
   var mat = new THREE.MeshPhongMaterial({
     color:Colors.red,
     shininess:0,
@@ -342,28 +363,57 @@ BulletsHolder = function (){
 
 BulletsHolder.prototype.addBullet = function() {
   var bullet = new Bullet();
-  bullet.angle = 0;
-  bullet.distance = game.seaRadius + game.planeDefaultHeight + (-1 + Math.random() * 2) * (game.planeAmpHeight-20);
-  bullet.mesh.position.y = -game.seaRadius + Math.sin(bullet.angle)*bullet.distance;
-  bullet.mesh.position.x = Math.cos(bullet.angle)*bullet.distance;
+
+  bullet.angle = 1.831;
+  var airheight = airplane.mesh.position.y;
+  var seacenter = getCenterPoint(sea.mesh).y;
+ //bullet.mesh.scale.set(0.5,0.5,0.5);
+
+
+
+  bullet.distance =  airplane.mesh.position.y + 100 ;
+
+
+ // console.log(bullet.distance);
+ // console.log(airheight);
+ // console.log(seacenter);
+
+
+  bullet.mesh.position.y = -Math.sin(bullet.angle)*bullet.distance - 100;
+  bullet.mesh.position.x = Math.cos(bullet.angle)*bullet.distance + 50;
+// console.log(bullet.mesh.position.y);
+ //console.log(bullet.mesh.position.x);
+console.log(bulletsHolder.bulletsInUse.length);
 
   this.mesh.add(bullet.mesh);
   this.bulletsInUse.push(bullet);
-  console.log("BulletsHolder addBullet done");
+  removeEnergy(4);
+  //console.log("BulletsHolder addBullet done");
 }
 
 BulletsHolder.prototype.rotateBullets = function(){
   for (var i=0; i<this.bulletsInUse.length; i++){
+
     var bullet = this.bulletsInUse[i];
     bullet.angle -= game.speed*deltaTime*game.bulletSpeed;
 
     if (bullet.angle > Math.PI*2) bullet.angle -= Math.PI*2;
 
-    bullet.mesh.position.y = airplane.mesh.position.y - 20;
-    bullet.mesh.position.x = Math.cos(bullet.angle)*bullet.distance;
-  }
-  // console.log(this.bulletsInUse.length);
-  // console.log("rotateBullets done");
+    bullet.mesh.position.y = Math.sin(bullet.angle)*bullet.distance - 100;
+    bullet.mesh.position.x = Math.cos(bullet.angle)*bullet.distance + 0;
+    // console.log( bullet.mesh.position.y);
+    // console.log( bullet.mesh.position.x);
+
+    if(bullet.angle < Math.PI/7){
+
+       
+         bulletsHolder.mesh.remove(bulletsHolder.bulletsInUse[i].mesh);
+
+         bulletsHolder.bulletsInUse.splice(i, 1);
+         particlesHolder.spawnParticles(bullet.mesh.position.clone(), 15, Colors.saddleBrown, 3);
+
+
+    }
 }
 
 Particle = function(){
@@ -420,7 +470,7 @@ ParticlesHolder.prototype.spawnParticles = function(pos, density, color, scale){
 }
 
 Coin = function(){
-  var geom = new THREE.TetrahedronGeometry(5,2);
+  var geom = new THREE.TetrahedronGeometry(5,0);
   var mat = new THREE.MeshPhongMaterial({
     color:0x256fff,
     shininess:0,
@@ -638,18 +688,25 @@ function loop(){
       ennemiesHolder.spawnEnnemies();
     }
 
-    if (Math.floor(game.distance)%game.distanceForLevelUpdate == 0 && Math.floor(game.distance) > game.levelLastUpdate){
-      game.levelLastUpdate = Math.floor(game.distance);
-      game.level++;
-      fieldLevel.innerHTML = Math.floor(game.level);
+    var g = game.level;
 
-      game.targetBaseSpeed = game.initSpeed + game.incrementSpeedByLevel*game.level
+      game.level = (Math.floor(game.distance)/game.distanceForLevelUpdate) + 1;
+
+      if ( g != game.level){
+
+      fieldLevel.innerHTML = Math.floor(game.level);
+    game.targetBaseSpeed = game.initSpeed + game.incrementSpeedByLevel*game.level;
     }
+
+      
+    
 
 
     updatePlane();
     updateDistance();
     updateEnergy();
+    updateKills();
+    updateHealth();
     game.baseSpeed += (game.targetBaseSpeed - game.baseSpeed) * deltaTime * 0.02;
     game.speed = game.baseSpeed * game.planeSpeed;
 
@@ -698,12 +755,14 @@ function updateDistance(){
 
 var blinkEnergy=false;
 
-
+function updateKills()  {
+  numkills.innerHTML = kills;
+}
 
 function updateEnergy(){
   game.energy -= game.speed*deltaTime*game.ratioSpeedEnergy;
   game.energy = Math.max(0, game.energy);
-  energyBar.style.right = (100-game.energy)+"%";
+  energyBar.style.right = (250-game.energy)+"%";
   energyBar.style.backgroundColor = (game.energy<50)? "#f25346" : "#68c3c0";
 
   if (game.energy<30){
@@ -719,11 +778,15 @@ function updateEnergy(){
 
 function addEnergy(){
   game.energy += game.coinValue;
-  game.energy = Math.min(game.energy, 100);
+  game.energy = Math.min(game.energy, 250);
 }
 
-function removeEnergy(){
-  game.energy -= game.ennemyValue;
+function removeEnergy(n){
+  if (!!n) {
+    game.energy -= n;
+  } else {
+    game.energy -= game.ennemyValue;
+  }
   game.energy = Math.max(0, game.energy);
 }
 
@@ -743,13 +806,13 @@ function updateHealth(){
   }
 }
 
-function addhealth(){
+function addhealth(n){
   game.health += game.coinValue;
   game.health = Math.min(game.health, 100);
 }
 
-function removehealth(){
-  game.health -= game.ennemyValue*3;
+function removehealth(n){
+  game.health -= n;
   game.health = Math.max(0, game.health);
 }
 
@@ -776,7 +839,7 @@ function normalize(v,vmin,vmax,tmin, tmax){
   return tv;
 }
 
-var fieldDistance, energyBar, replayMessage, fieldLevel, levelCircle;
+var fieldDistance, energyBar, replayMessage, fieldLevel, levelCircle, numkills;
 
 function init(event){
 
@@ -787,6 +850,7 @@ function init(event){
   replayMessage = document.getElementById("replayMessage");
   fieldLevel = document.getElementById("levelValue");
   levelCircle = document.getElementById("levelCircleStroke");
+    numkills = document.getElementById("killsvalue");
 
   resetGame();
   createScene();
