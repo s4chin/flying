@@ -45,6 +45,16 @@ var running_sound = new Howl({
   }
 });
 
+var low_sound = new Howl({
+  src: ['low.wav'],
+  volume: 1,
+});
+
+var shot_sound = new Howl({
+  src: ['shot.wav'],
+  volume: 1,
+});
+
 var collision_sound = new Howl({
   src: ['crash.wav'],
   loop: false,
@@ -340,33 +350,33 @@ EnnemiesHolder.prototype.rotateEnnemies = function(){
       this.mesh.remove(ennemy.mesh);
       i--;
     }
-      
+
     for(let j=0; j < bulletsHolder.bulletsInUse.length; j++) {
 
-      
+
       var diffPos1 = bulletsHolder.bulletsInUse[j].mesh.position.clone().sub(ennemy.mesh.position.clone());
       var d = diffPos1.length();
       if (d<game.ennemyDistanceTolerance){
 
-
+        collision_sound.play();
           var bullet = bulletsHolder.bulletsInUse[j];
         //console.log(j, 'collided bullet');
         particlesHolder.spawnParticles(ennemy.mesh.position.clone(), 15, Colors.saddleBrown, 3);
          particlesHolder.spawnParticles(bullet.mesh.position.clone(), 15, Colors.saddleBrown, 3);
-       
+
         ennemiesPool.unshift(this.ennemiesInUse.splice(i,1)[0]);
-       
+
 
 
         this.mesh.remove(ennemy.mesh);
         //console.log(i, 'collided enemy');
-        
+
 
         bulletsHolder.mesh.remove(bulletsHolder.bulletsInUse[j].mesh);
 
         bulletsHolder.bulletsInUse.splice(j, 1);
 
-        
+
         ambientLight.intensity = 2;
         kills++;
         i--;
@@ -400,21 +410,11 @@ BulletsHolder = function (){
 }
 
 BulletsHolder.prototype.addBullet = function() {
+  shot_sound.play();
   var bullet = new Bullet();
 
   bullet.angle = 1.831;
-  var airheight = airplane.mesh.position.y;
-  var seacenter = getCenterPoint(sea.mesh).y;
- //bullet.mesh.scale.set(0.5,0.5,0.5);
-
-
-
   bullet.distance =  airplane.mesh.position.y + 100 ;
-
-
- // console.log(bullet.distance);
- // console.log(airheight);
- // console.log(seacenter);
 
 
   bullet.mesh.position.y = -Math.sin(bullet.angle)*bullet.distance - 100;
@@ -444,7 +444,7 @@ BulletsHolder.prototype.rotateBullets = function(){
 
     if(bullet.angle < Math.PI/7){
 
-       
+
          bulletsHolder.mesh.remove(bulletsHolder.bulletsInUse[i].mesh);
 
          bulletsHolder.bulletsInUse.splice(i, 1);
@@ -453,7 +453,7 @@ BulletsHolder.prototype.rotateBullets = function(){
 
     }
 }
-
+}
 Particle = function(){
   var geom = new THREE.TetrahedronGeometry(3,0);
   var mat = new THREE.MeshPhongMaterial({
@@ -584,60 +584,6 @@ CoinsHolder.prototype.rotateCoins = function(){
 
 
 
-var missile
-
-missile =  function () {
-
-  var geom = new THREE.CylinderGeometry(5,2,10,4);
-  var mat = new THREE.MeshPhongMaterial({
-    color:0x982106,
-    shininess:0,
-    specular:0xffffff,
-    shading:THREE.FlatShading
-  });
-  this.mesh = new THREE.Mesh(geom,mat);
-    }
-
-
-function createMissile(){
- missile = new Missile();
-  missile.mesh.scale.set(1,1,1);
- missile.mesh.position.y = airplane.mesh.position.y - 20;
-  scene.add(missile.mesh);
-
-
-}
-
-function messagedisp(){
-
-
-   alert("no more click");
-
-}
-
-
-function moveMissile() {
-
-
-
-}
-
-// <embed loop="true" src="continuoussound.mp3" hidden="true" type="video/quicktime" ></embed>
-/*var bgsound;
-var blast;
-function createblastsound(){
- bgsound = document.getElementById("bgsound");
- blast = document.createElement("embed");
-blast.setAttribute("src","blast sound");
-blast.setAttribute("type","video/quicktime");
-blast.setAttribute("hidden","true");
-bgsound.appendChild(blast);
-
-alert("bgsound.innerHTML")
-}
-
-*/
-
 function createCoins(){
 
   coinsHolder = new CoinsHolder(20);
@@ -743,8 +689,8 @@ function loop(){
     game.targetBaseSpeed = game.initSpeed + game.incrementSpeedByLevel*game.level;
     }
 
-      
-    
+
+
 
 
     updatePlane();
@@ -813,12 +759,19 @@ function updateKills()  {
 function updateEnergy(){
   game.energy -= game.speed*deltaTime*game.ratioSpeedEnergy;
   game.energy = Math.max(0, game.energy);
-  energyBar.style.right = (250-game.energy)+"%";
-  energyBar.style.backgroundColor = (game.energy<50)? "#f25346" : "#68c3c0";
+  energyBar.style.right = Math.ceil((250-game.energy)*100/250)+"%";
+  energyBar.style.backgroundColor = (game.energy<100)? "#f25346" : "#68c3c0";
 
-  if (game.energy<30){
+  if (game.energy<60){
     energyBar.style.animationName = "blinking";
+    console.log("yo");
+    if(!low_sound.playing()) {
+      low_sound.fade(0, 0.75, 500);
+    }
   }else{
+    if(low_sound.playing()) {
+      low_sound.fade(low_sound.volume(), 0, 400);
+    }
     energyBar.style.animationName = "none";
   }
 
@@ -844,12 +797,18 @@ function removeEnergy(n){
 
 function updateHealth(){
 
-  healthBar.style.right = (250-game.health)+"%";
+  healthBar.style.right = (100-game.health)+"%";
   healthBar.style.backgroundColor = (game.health<50)? "#f25346" : "#68c3c0";
 
   if (game.health<30){
+    if(!low_sound.playing()) {
+      low_sound.fade(0, 0.75, 500);
+    }
     healthBar.style.animationName = "blinking";
   }else{
+    if(low_sound.playing()) {
+      low_sound.fade(low_sound.volume(), 0, 400);
+    }
     healthBar.style.animationName = "none";
   }
 

@@ -92,6 +92,10 @@
 	font-size: 30px;
 }
 
+.score__value--kills {
+	font-size: 30px;
+}
+
 .level-circle {
 	position: absolute;
 	left: 50%;
