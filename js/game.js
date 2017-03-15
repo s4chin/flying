@@ -33,6 +33,42 @@ var ennemiesPool = [];
 var particlesPool = [];
 var particlesInUse = [];
 
+var running_sound = new Howl({
+  src: ['continuoussound.mp3'],
+  loop: true,
+  volume: 1,
+  sprite: {
+    run: [500, 2500],
+  },
+  onend: function() {
+    console.log('Finished!');
+  }
+});
+
+var collision_sound = new Howl({
+  src: ['crash.wav'],
+  loop: false,
+  volume: 1,
+  rate: 1.25,
+});
+
+var coin_sound = new Howl({
+  src: ['coin.wav'],
+  loop: false,
+  volume: 0.8,
+});
+
+var end_sound = new Howl({
+  src: ['gameover.wav'],
+  loop: false,
+  volume: 1,
+});
+var start_sound = new Howl({
+  src: ['start.wav'],
+  loop: false,
+  volume: 1.5,
+});
+
 function resetGame(){
   game = {speed:0,
           initSpeed:.00035,
@@ -98,6 +134,7 @@ function resetGame(){
           status : "playing",
          };
   fieldLevel.innerHTML = Math.floor(game.level);
+  start_sound.play();
 }
 
 //THREEJS RELATED VARIABLES
@@ -286,6 +323,7 @@ EnnemiesHolder.prototype.rotateEnnemies = function(){
     var d = diffPos.length();
     if (d<game.ennemyDistanceTolerance){
       particlesHolder.spawnParticles(ennemy.mesh.position.clone(), 15, Colors.saddleBrown, 3);
+      collision_sound.play();
 
       ennemiesPool.unshift(this.ennemiesInUse.splice(i,1)[0]);
 
@@ -530,6 +568,7 @@ CoinsHolder.prototype.rotateCoins = function(){
     var diffPos = airplane.mesh.position.clone().sub(coin.mesh.position.clone());
     var d = diffPos.length();
     if (d<game.coinDistanceTolerance){
+      coin_sound.play();
       this.coinsPool.unshift(this.coinsInUse.splice(i,1)[0]);
       this.mesh.remove(coin.mesh);
       particlesHolder.spawnParticles(coin.mesh.position.clone(), 10, 0x256fff, .8);
@@ -652,6 +691,12 @@ function loop(){
 
   if (game.status=="playing"){
 
+    console.log(running_sound.playing('run'));
+    if(!running_sound.playing('run')) {
+      running_sound.play('run');
+      console.log("sound started");
+    }
+
 
 /*
 
@@ -711,6 +756,12 @@ function loop(){
     game.speed = game.baseSpeed * game.planeSpeed;
 
   }else if(game.status=="gameover"){
+    if(running_sound.playing('run')) {
+      running_sound.fade(running_sound.volume('run'), 0, 500);
+    }
+    if(!end_sound.playing()) {
+      end_sound.play();
+    }
     game.speed *= .99;
     airplane.mesh.rotation.z += (-Math.PI/2 - airplane.mesh.rotation.z)*.0002*deltaTime;
     airplane.mesh.rotation.x += 0.0003*deltaTime;
@@ -773,6 +824,7 @@ function updateEnergy(){
 
   if (game.energy <1){
     game.status = "gameover";
+    console.log("ded");
   }
 }
 
@@ -792,7 +844,7 @@ function removeEnergy(n){
 
 function updateHealth(){
 
-  healthBar.style.right = (100-game.health)+"%";
+  healthBar.style.right = (250-game.health)+"%";
   healthBar.style.backgroundColor = (game.health<50)? "#f25346" : "#68c3c0";
 
   if (game.health<30){
