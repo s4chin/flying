@@ -47,6 +47,7 @@ var running_sound = new Howl({
 
 var low_sound = new Howl({
   src: ['low.wav'],
+  loop: true,
   volume: 1,
 });
 
@@ -702,6 +703,9 @@ function loop(){
     game.speed = game.baseSpeed * game.planeSpeed;
 
   }else if(game.status=="gameover"){
+    if(low_sound.playing()) {
+      low_sound.fade(low_sound.volume(), 0, 200);
+    }
     if(running_sound.playing('run')) {
       running_sound.fade(running_sound.volume('run'), 0, 500);
     }
@@ -766,11 +770,11 @@ function updateEnergy(){
     energyBar.style.animationName = "blinking";
     console.log("yo");
     if(!low_sound.playing()) {
-      low_sound.fade(0, 0.75, 500);
+      low_sound.play();
     }
   }else{
     if(low_sound.playing()) {
-      low_sound.fade(low_sound.volume(), 0, 400);
+      low_sound.fade(low_sound.volume(), 0, 200);
     }
     energyBar.style.animationName = "none";
   }
@@ -802,12 +806,12 @@ function updateHealth(){
 
   if (game.health<30){
     if(!low_sound.playing()) {
-      low_sound.fade(0, 0.75, 500);
+      low_sound.play();
     }
     healthBar.style.animationName = "blinking";
   }else{
     if(low_sound.playing()) {
-      low_sound.fade(low_sound.volume(), 0, 400);
+      low_sound.fade(low_sound.volume(), 0, 200);
     }
     healthBar.style.animationName = "none";
   }
